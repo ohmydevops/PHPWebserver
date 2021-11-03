@@ -1,133 +1,131 @@
 <?php
+declare(strict_types=1);
 
 namespace ClanCats\Station\PHPServer;
 
-use ClanCats\Station\PHPServer\Exception;
 
 class Request
 {
-	/**
-	 * The request method
-	 *
-	 * @var string 
-	 */
-	protected $method = null;
+    /**
+     * The request method
+     *
+     * @var string
+     */
+    public string $method;
 
-	/**
-	 * The requested uri
-	 *
-	 * @var string
-	 */
-	protected $uri = null;
+    /**
+     * The requested uri
+     *
+     * @var string
+     */
+    public string $uri;
 
-	/**
-	 * The request params
-	 *
-	 * @var array
-	 */
-	protected $parameters = [];
+    /**
+     * The request params
+     *
+     * @var array
+     */
+    public array $parameters = [];
 
-	/**
-	 * The request params
-	 *
-	 * @var array
-	 */
-	protected $headers = [];
+    /**
+     * The request params
+     *
+     * @var array
+     */
+    public array $headers = [];
 
-	/**
-	 * Create new request instance using a string header
-	 *
-	 * @param string 			$header
-	 * @return Request
-	 */
-	public static function withHeaderString($header)
-	{
-		$lines = explode("\n", $header);
+    /**
+     * Request constructor
+     *
+     * @param string $method
+     * @param string $uri
+     * @param array $headers
+     * @return void
+     */
+    public function __construct(string $method, string $uri, array $headers = [])
+    {
+        $this->headers = $headers;
+        $this->method = strtoupper( $method );
 
-		// method and uri
-		list($method, $uri) = explode(' ', array_shift($lines));
+        // split uri and parameters string
+        $uriExploded = explode( '?', $uri );
+        $this->uri = $uriExploded[0] ?? '';
+        $params = $uriExploded[1] ?? '';
 
-		$headers = [];
+        // parse the parameters
+        if($params !== null) {
+            parse_str($params, $this->parameters);
+        }
+    }
 
-		foreach ($lines as $line) {
-			// clean the line
-			$line = trim($line);
+    /**
+     * Create new request instance using a string header
+     *
+     * @param string $header
+     * @return Request
+     */
+    public static function getRequestWithHeaderString(string $header): Request
+    {
+        $lines = explode("\n", $header);
 
-			if (strpos($line, ': ') !== false) {
-				list($key, $value) = explode(': ', $line);
-				$headers[$key] = $value;
-			}
-		}
+        // method and uri
+        list($method, $uri) = explode(' ', array_shift($lines));
 
-		// create new request object
-		return new static($method, $uri, $headers);
-	}
+        $headers = [];
 
-	/**
-	 * Request constructor
-	 *
-	 * @param string 			$method
-	 * @param string 			$uri
-	 * @param array 			$headers
-	 * @return void
-	 */
-	public function __construct($method, $uri, $headers = [])
-	{
-		$this->headers = $headers;
-		$this->method = strtoupper($method);
+        foreach ($lines as $line) {
+            // clean the line
+            $line = trim($line);
 
-		// split uri and parameters string
-		@list($this->uri, $params) = explode('?', $uri);
+            if (str_contains($line, ': ')) {
+                list($key, $value) = explode(': ', $line);
+                $headers[$key] = $value;
+            }
+        }
 
-		// parse the parmeters
-		parse_str($params, $this->parameters);
-	}
+        // create new request object
+        return new static($method, $uri, $headers);
+    }
 
-	/**
-	 * Return the request method
-	 *
-	 * @return string
-	 */
-	public function method()
-	{
-		return $this->method;
-	}
+    /**
+     * Return the request method
+     *
+     * @return string
+     */
+    public function method(): string
+    {
+        return $this->method;
+    }
 
-	/**
-	 * Return the request uri
-	 *
-	 * @return string
-	 */
-	public function uri()
-	{
-		return $this->uri;
-	}
+    /**
+     * Return the request uri
+     *
+     * @return string
+     */
+    public function uri(): string
+    {
+        return $this->uri;
+    }
 
-	/**
-	 * Return a request header
-	 *
-	 * @return string
-	 */
-	public function header($key, $default = null)
-	{
-		if (!isset($this->headers[$key])) {
-			return $default;
-		}
+    /**
+     * Return a request header
+     *
+     * @param string $key
+     * @return string|null
+     */
+    public function getHeader(string $key): ?string
+    {
+        return $this->headers[$key] ?? null;
+    }
 
-		return $this->headers[$key];
-	}
-
-	/**
-	 * Return a request parameter
-	 *
-	 * @return string
-	 */
-	public function param($key, $default = null)
-	{
-		if (!isset($this->parameters[$key])) {
-			return $default;
-		}
-
-		return $this->parameters[$key];
-	}
+    /**
+     * Return a request parameter
+     *
+     * @param string $key
+     * @return string|null
+     */
+    public function param(string $key): ?string
+    {
+        return $this->parameters[$key] ?? null;
+    }
 }
